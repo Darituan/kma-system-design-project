@@ -32,6 +32,7 @@ func (s *Service) GetForecast(location string) (*models.GetForecastResponse, err
 		SetError(&models.ErrorResponse{}).
 		SetQueryParam("key", s.weatherKey).
 		SetQueryParam("q", location).
+		SetQueryParam("days", "5").
 		Get(url)
 
 	err = handleError(resp, err)
