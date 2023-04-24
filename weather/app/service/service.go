@@ -163,7 +163,7 @@ func (s *Service) ParseHours(data models.Forecastday) ([]string, int) {
 	var result []string
 	for _, hour := range data.Hour {
 		timeTemp := strings.Split(hour.Time, " ")
-		tt, err := time.Parse(time.RFC3339, data.Date+"T"+timeTemp[1]+":00+"+strings.Split(now.Format(time.RFC3339), "+")[1])
+		tt, err := time.Parse(time.RFC3339, data.Date+"T"+timeTemp[1]+":00+03:00")
 		if err != nil {
 			panic(err)
 		}
