@@ -121,14 +121,17 @@ def write_document(doc, directory, name):
 def documents_to_vec(docs):
     cv = CountVectorizer(max_df=0.98, min_df=2)
     word_count_vector = cv.fit_transform(docs)
+    save_pickle(word_count_vector,"lab3/data/modified","word_count_vector.pkl",'wb')
     save_pickle(cv, "model", "count_vectorizer_v1.pkl", 'wb')
     tfidf_transformer = TfidfTransformer(smooth_idf=True, use_idf=True)
     tfidf_transformer.fit(word_count_vector)
     save_pickle(tfidf_transformer, "model", "tfidf_transformer_v1.pkl", 'wb')
 
-
-documents = preprocess_docs('isw_reports_txt')
-for i in range(len(documents)):
-    write_document(documents[i], "preprocessed_reports", f"report{i}.txt")
-documents_to_vec(documents)
+def main():
+    documents = preprocess_docs('isw_reports_txt')
+    if not os.path.exists("preprocessed_reports"):
+        os.mkdir("preprocessed_reports")
+    for i in range(len(documents)):
+        write_document(documents[i], "preprocessed_reports", f"report{i}.txt")
+    documents_to_vec(documents)
 
