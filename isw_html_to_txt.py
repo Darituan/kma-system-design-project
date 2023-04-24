@@ -17,9 +17,10 @@ def main():
         os.mkdir(directory_to_write)
 
     for filename in os.listdir(directory):
-        f = os.path.join(directory, filename)
-        if os.path.exists(f):
+        future_name = filename.replace('.html', '.txt')
+        if os.path.exists(os.path.join(directory_to_write, future_name)):
             continue
+        f = os.path.join(directory, filename)
         with open(f, 'r', encoding='utf-8') as file:
             data = file.read()
             html = data

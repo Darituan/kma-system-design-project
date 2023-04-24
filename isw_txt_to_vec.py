@@ -122,6 +122,8 @@ def documents_to_vec(docs):
     cv = CountVectorizer(max_df=0.98, min_df=2)
     word_count_vector = cv.fit_transform(docs)
     save_pickle(word_count_vector,"lab3/data/modified","word_count_vector.pkl",'wb')
+    if not os.path.exists("model"):
+        os.mkdir("model")
     save_pickle(cv, "model", "count_vectorizer_v1.pkl", 'wb')
     tfidf_transformer = TfidfTransformer(smooth_idf=True, use_idf=True)
     tfidf_transformer.fit(word_count_vector)
