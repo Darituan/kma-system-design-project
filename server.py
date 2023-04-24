@@ -14,6 +14,7 @@ app = Flask(__name__)
 @app.route('/forecast', methods=['GET', 'POST'])
 def forecast():
     validate_token(request.args.get('token'))
+    if request.method == 'GET':
         try:
             predictions = {}
             with open('predictions_all.json', 'r') as handle:
