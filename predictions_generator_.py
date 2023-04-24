@@ -200,7 +200,5 @@ def generate_predictions():
         json.dump(formatted_result, f)
 
 
-generate_predictions()
-
-# if __name__ == '__main__':
-#     generate_predictions()
+if __name__ == '__main__':
+    generate_predictions()
