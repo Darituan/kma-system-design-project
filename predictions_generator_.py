@@ -6,43 +6,18 @@ import requests
 import os
 from datetime import datetime
 
+import isw_vector_generator
+
 INPUT_DATA_FOLDER = "lab3/data/modified"
-MODELS_FOLDER="lab3/models"
-MODEL_FILE="model_3_tuned_no_sklearnx.pkl"
+MODELS_FOLDER = "lab3/models"
+MODEL_FILE = "model_3_tuned_no_sklearnx.pkl"
 REGION_FILE = "regions.csv"
 DATES_FILE = "dates.pkl"
 VECTOR_FILE = "word_count_vector.pkl"
 
-with open(f"{INPUT_DATA_FOLDER}/{VECTOR_FILE}", 'rb') as datafile:
-    vectors = pickle.load(datafile)
-
-vectors = vectors.toarray()
-vectorsFloat = []
-
-for i in range(len(vectors)):
-    vectorsFloat.append([])
-    for j in range(len(vectors[i])):
-        vectorsFloat[i].append(float(vectors[i][j]))
-
-vectors = []
-
-
-with open(f"{INPUT_DATA_FOLDER}/{REGION_FILE}", newline='', encoding='utf-8') as csvfile:
-    regions = list(csv.reader(csvfile))
-
-with open(f"{INPUT_DATA_FOLDER}/{DATES_FILE}", 'rb') as datafile:
-    dates = pickle.load(datafile)
-
-for i in range(len(dates)):
-    dates[i] = pd.to_datetime(dates[i].replace(".txt", ""), format="%d:%m:%y")
-dates = sorted(dates)
-
-
-pickled_model = pickle.load(open(f'{MODELS_FOLDER}/{MODEL_FILE}', 'rb'))
-
 
 # addition funcs
-def findRegion(check):
+def findRegion(check, regions):
     for region in regions:
         for regionTemp in region:
             if regionTemp == check:
@@ -50,9 +25,9 @@ def findRegion(check):
     return None
 
 
-def findRegionName(regiond_id):
+def findRegionName(regiond_id, regions):
     for region in regions:
-        if region[4]==regiond_id:
+        if region[4] == regiond_id:
             return region[2]
     return None
 
@@ -91,6 +66,32 @@ url = "http://localhost:8080/forecast"
 
 
 def generate_predictions():
+    print("Started predictions generator")
+    isw_vector_generator.main()
+
+    with open(f"{INPUT_DATA_FOLDER}/{VECTOR_FILE}", 'rb') as datafile:
+        vectors = pickle.load(datafile)
+
+    vectors = vectors.toarray()
+    vectorsFloat = []
+    for i in range(len(vectors)):
+        vectorsFloat.append([])
+        for j in range(len(vectors[i])):
+            vectorsFloat[i].append(float(vectors[i][j]))
+
+    vectors = []
+    with open(f"{INPUT_DATA_FOLDER}/{REGION_FILE}", newline='', encoding='utf-8') as csvfile:
+        regions = list(csv.reader(csvfile))
+
+    with open(f"{INPUT_DATA_FOLDER}/{DATES_FILE}", 'rb') as datafile:
+        dates = pickle.load(datafile)
+
+    for i in range(len(dates)):
+        dates[i] = pd.to_datetime(dates[i].replace(".txt", ""), format="%d:%m:%y")
+    dates = sorted(dates)
+
+    pickled_model = pickle.load(open(f'{MODELS_FOLDER}/{MODEL_FILE}', 'rb'))
+
     response = requests.get(url)
 
     if response.status_code == 200:
@@ -105,10 +106,8 @@ def generate_predictions():
     for line in data['data']:
         words = line.split(',')
         test_data.append(words)
-        desc = [words[0]]
-        prediction_descriptions.append([findRegionName(words[0]), words[17][0:5]])
+        prediction_descriptions.append([findRegionName(words[0], regions), words[17][0:5]])
 
-    alarmsBit = []
     dayConditions = {}
     hourConditions = {}
     dayConditionsIndex = 16
@@ -118,15 +117,11 @@ def generate_predictions():
         if i % 10000 == 0:
             print(i)
         x = test_data[i]
-        aaa = findRegion(x[0].split(",")[0])
+        aaa = findRegion(x[0].split(",")[0], regions)
         if aaa is None:
             print(x)
         x[0] = aaa
-        date = pd.to_datetime(x[1])
-        # if not findDate(dates, date):
-        #     indexsToRemove.append(i - len(indexsToRemove))
-        #     continue
-        #     remove  time
+        # remove  time
 
         x.pop(17)
         try:
@@ -143,11 +138,8 @@ def generate_predictions():
 
         #     remove date
         x.pop(1)
-        # vector = findVector(vectorsFloat, dates, date)
-        # if vector is None:
-        #     print(date)
-        #     continue
-        # x.extend(vector)
+        vector = vectorsFloat[len(vectorsFloat) - 1]
+        x.extend(vector)
 
     #     weather.append(temp.copy())
     dayConditions = {}
@@ -156,11 +148,10 @@ def generate_predictions():
     hourIcons = {}
     alarmsDict = {}
     vectorsFloat = []
-
-    print(len(indexsToRemove))
-    print(len(test_data))
-    for index in indexsToRemove:
-        test_data.pop(index)
+    # print(len(indexsToRemove))
+    # print(len(test_data))
+    # for index in indexsToRemove:
+    #     test_data.pop(index)
 
     for x in test_data:
         for i in range(len(x)):
@@ -171,11 +162,16 @@ def generate_predictions():
             if type(x[i]) is int:
                 x[i] = float(x[i])
     for x in test_data:
-        for n in range(6748 - len(x)):
-            x.append(0.0)
+        expected_features = pickled_model.n_features_in_
+        if expected_features > len(x):
+            for n in range(expected_features - len(x)):
+                x.append(0.0)
+        else:
+            while len(x) > expected_features:
+                x.pop()
 
     prediction = pickled_model.predict(test_data)
-
+    print(max(prediction))
     now = datetime.utcnow()
     result = {}
     # formatted_result['regions_forecast']={}

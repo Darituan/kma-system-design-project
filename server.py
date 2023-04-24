@@ -1,13 +1,19 @@
 from flask import Flask, jsonify, request, abort
 from predictions_generator_ import generate_predictions
 import json
+import dotenv
+import os
+
+dotenv.load_dotenv()
+
+MY_API_TOKEN = os.getenv("MY_API_TOKEN")
 
 app = Flask(__name__)
 
 
 @app.route('/forecast', methods=['GET', 'POST'])
 def forecast():
-    if request.method == 'GET':
+    validate_token(request.args.get('token'))
         try:
             predictions = {}
             with open('predictions_all.json', 'r') as handle:
@@ -46,12 +52,20 @@ def forecast():
 
 @app.route('/update', methods=['GET'])
 def update():
+    
+    validate_token(request.args.get('token'))
+    
     try:
         generate_predictions()
         return jsonify({"msg": "Update successful"}), 200
     except:
         abort(500)
 
+def validate_token(token):
+    if token is None:
+        abort(400)
+    if token != MY_API_TOKEN:
+        abort(403) 
 
 if __name__ == '__main__':
     app.run()
